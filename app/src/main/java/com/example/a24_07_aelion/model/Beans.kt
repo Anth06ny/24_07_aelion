@@ -8,6 +8,8 @@ fun main() {
    var car2 = CarBean("","")
 }
 
+data class PictureBean(val id:Int, val url: String, val title: String, val longText: String)
+
 class RandomName {
 
     private var list = arrayListOf("Toto", "Tata", "Titi")

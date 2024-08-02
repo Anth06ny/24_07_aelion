@@ -52,5 +52,5 @@ fun main() {
 
     println("Il fait ${first.main.temp}° à ${first.name} (id=${first.id}) avec un vent de ${first.wind.speed} m/s")
 
-
 }
+
