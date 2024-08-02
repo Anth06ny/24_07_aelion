@@ -39,9 +39,11 @@ object WeatherAPI {
 }
 
 data class WeatherResultBean(var list: ArrayList<WeatherBean>)
-data class WeatherBean(var id: Long, var name: String, var main: TempBean, var wind: WindBean)
+data class WeatherBean(var id: Int, var name: String, var main: TempBean, var wind: WindBean, var weather : List<DescriptionBean>)
 data class TempBean(var temp: Double)
 data class WindBean(var speed: Double)
+data class DescriptionBean(var description: String, var icon:String )
+
 
 //Utilisation
 fun main() {

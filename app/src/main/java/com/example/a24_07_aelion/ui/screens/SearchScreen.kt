@@ -1,7 +1,10 @@
 package com.example.a24_07_aelion.ui.screens
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,12 +21,17 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -39,6 +47,7 @@ import com.example.a24_07_aelion.model.MainViewModel
 import com.example.a24_07_aelion.model.PictureBean
 import com.example.a24_07_aelion.ui.theme._24_07_aelionTheme
 
+//Lien vidéo https://cloud.leviia.com/s/ZnIy.pAtNqRe2TzmqwAi
 @Preview(showBackground = true, showSystemUi = true)
 @Preview(showBackground = true, showSystemUi = true, uiMode = UI_MODE_NIGHT_YES, locale = "fr")
 @Composable
@@ -48,6 +57,8 @@ fun SearchScreenPreview() {
     _24_07_aelionTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val mainViewModel = MainViewModel()
+            mainViewModel.errorMessage.value = "Coucou"
+            mainViewModel.runInProgress.value = true
             SearchScreen(mainViewModel)
         }
     }
@@ -56,24 +67,43 @@ fun SearchScreenPreview() {
 
 @Composable
 fun SearchScreen(mainViewModel: MainViewModel) {
-    Column(modifier = Modifier.background(Color.LightGray)) {
+    Column(modifier = Modifier.background(Color.LightGray), horizontalAlignment = Alignment.CenterHorizontally) {
+
+        var searchText: MutableState<String> = remember { mutableStateOf("")}
 
         //seacherbar
-        SearchBar()
+        SearchBar(searchText = searchText)
+
+        AnimatedVisibility(mainViewModel.errorMessage.value.isNotBlank()) {
+            Text(
+                text = mainViewModel.errorMessage.value,
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onError,
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.error)
+            )
+        }
+
+        AnimatedVisibility(visible = mainViewModel.runInProgress.value){
+            CircularProgressIndicator()
+        }
 
         //Permet de remplacer très facilement le RecyclerView. LazyRow existe aussi
+
+
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-            items(mainViewModel.dataList.size) {
-                PictureRowItem(data = mainViewModel.dataList[it]
+            items(mainViewModel.dataList.value.size) {
+                PictureRowItem(data = mainViewModel.dataList.value[it]
                 )
             }
         }
 
         //boutons
-        Row(modifier = Modifier.background(Color.Yellow).fillMaxWidth(),
+        Row(modifier = Modifier
+            .background(Color.Yellow)
+            .fillMaxWidth(),
             horizontalArrangement = Arrangement.Center) {
             Button(
-                onClick = { /* Do something! */ },
+                onClick = { searchText.value = "" },
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding
             ) {
                 Icon(
@@ -82,11 +112,13 @@ fun SearchScreen(mainViewModel: MainViewModel) {
                     modifier = Modifier.size(ButtonDefaults.IconSize)
                 )
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Like")
+                Text("Cancel")
             }
 
             Button(
-                onClick = { /* Do something! */ },
+                onClick = {
+                    mainViewModel.loadWeather(searchText.value)
+                },
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding
             ) {
                 Icon(
@@ -102,10 +134,12 @@ fun SearchScreen(mainViewModel: MainViewModel) {
 }
 
 @Composable
-fun SearchBar(modifier:Modifier = Modifier){
+fun SearchBar(modifier:Modifier = Modifier, searchText: MutableState<String>){
+    println("SearchBar recomposition")
+
     TextField(
-        value = "Coucou", //Valeur affichée
-        onValueChange = {newValue:String -> }, //Nouveau texte entrée
+        value = searchText.value, //Valeur affichée
+        onValueChange = {newValue:String -> searchText.value = newValue }, //Nouveau texte entrée
         leadingIcon = { //Image d'icone
             Icon(
                 imageVector = Icons.Default.Search,
@@ -132,7 +166,11 @@ fun SearchBar(modifier:Modifier = Modifier){
 @Composable
 fun PictureRowItem(modifier: Modifier = Modifier, data: PictureBean) {
 
-    Row (modifier = Modifier.fillMaxWidth().background(Color.White)) {
+    var isExpend = remember {mutableStateOf(false)}
+
+    Row (modifier = Modifier
+        .fillMaxWidth()
+        .background(Color.White)) {
         //Permission Internet nécessaire
         GlideImage(
             model = data.url,
@@ -146,8 +184,9 @@ fun PictureRowItem(modifier: Modifier = Modifier, data: PictureBean) {
             failure = placeholder(R.mipmap.ic_launcher),
             contentScale = ContentScale.Fit,
             //même autres champs qu'une Image classique
-            modifier = Modifier.heightIn(max = 100.dp) //Sans hauteur il prendra tous l'écran
-                .widthIn(max= 100.dp)
+            modifier = Modifier
+                .heightIn(max = 100.dp) //Sans hauteur il prendra tous l'écran
+                .widthIn(max = 100.dp)
         )
         Column(modifier = Modifier.padding(8.dp)) {
             Text(
@@ -155,9 +194,12 @@ fun PictureRowItem(modifier: Modifier = Modifier, data: PictureBean) {
                 fontSize = 20.sp,
             )
             Text(
-                text = data.longText.take(20) +"...",
+                text = if(isExpend.value) data.longText else (data.longText.take(20) +"..."),
                 fontSize = 14.sp,
                 color = Color.Blue,
+                modifier = Modifier
+                    .clickable { isExpend.value = !isExpend.value }
+                    .animateContentSize()
             )
 
         }

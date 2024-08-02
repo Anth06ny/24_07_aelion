@@ -7,6 +7,7 @@ import com.example.a24_07_aelion.model.MainViewModel
 import com.example.a24_07_aelion.ui.screens.SearchScreen
 import com.example.a24_07_aelion.ui.theme._24_07_aelionTheme
 
+//Lien vidéo https://cloud.leviia.com/s/ZnIy.pAtNqRe2TzmqwAi
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
